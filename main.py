@@ -2,25 +2,26 @@ import download
 import fileManagment
 import csvManagment
 
-# lataa tiedot ja myöhemmin vidi jos tarvitsee
-# lataa vidi ja tee temp kansio sille
-# hanki vidin json
-# kato onko vidin kanavalla jo kansiota
-# tee kansio ja csv
-# uudelleen nimeä temp kansio
-# anna json csv maangerille
-# poimi jsonista tiedot
-# päivitä csv
+# tee dict jossa id:t jotka tarvii kamaa esim vidin
 
 def downloadVideo():
-    download.downloadData()
-    download.download()
+    fileManagment.clearTemp()
+    load = download.downloadObj
+    load.downloadData()
+    load.download()
+    fileManagment.clearTemp()
 
 def downloadAudio():
-    download.downloadData()
-    download.audioDownload()
+    fileManagment.clearTemp()
+    load = download.downloadObj
+    load.downloadData()
+    load.audioDownload()
+    fileManagment.clearTemp()
 
 def downloadData(urls, comments):
-    download.downloadData(urls, comments)
+    fileManagment.clearTemp()
+    load = download.downloadObj
+    load.downloadData(urls, comments)
+    fileManagment.clearTemp()
 
 

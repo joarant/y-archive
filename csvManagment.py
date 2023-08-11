@@ -1,7 +1,18 @@
 import pandas as pd 
 from os import path
+from datetime import datetime
 
-videoFields = [
+channelFieldsCols = [
+    "name",
+    "id",
+    "sub count",
+    "video count",
+    "about",
+    "edit timestamp"
+]
+
+
+videoFieldsCols = [
     "video name",
     "thumbnail",
     "id",
@@ -15,52 +26,74 @@ videoFields = [
     "subtitles",
     "age restricted",
     "likes",
-    "edit timestamp"
+    "checked"
 ]
-
-channelFields = [
-    "name",
-    "id",
-    "sub count",
-    "video count",
-    "about",
-    "edit timestamp"
-]
-
 
 def readVideoCsvFile(path):
     return pd.DataFrame(path)
 
-# checkIfExsists
-# update
-# update append
+def getFromData(data, label: str):
+    try:
+        return data[label]
+    except:
+        return ""
+        
 
-def findIndexFromCsv(videoId):
-    return readVideoCsvFile()['id'].loc[lambda x: x==videoId].index
-
-# def addToCsv(data):
-#     print()
 
 def updateVideoCsv(pathToCsv, videoId, data):
-    vDf = pd.read_csv(path.join(pathToCsv, "videoInfo"))
-    row = vDf.loc[vDf['id'] == videoId]
-    if row is None:
-        print("tyhjä")
-    for col in row:
-        
-    print()
+    vDf = pd.read_csv(path.join(pathToCsv, "videoInfo.csv"))
+    row = vDf.loc[vDf['id'] == videoId].index
+    videoFields = {
+    "video name": [getFromData(data, "title")],
+    "thumbnail": [getFromData(data, "")],
+    "id": [data["id"]] ,
+    "view count": [data["view_count"]],
+    "upload date": [data["upload_date"]],
+    "video": [getFromData(data, "")],
+    "audio": [getFromData(data, "")],
+    "comments": [getFromData(data, "")],
+    "description": [data["description"]],
+    "tags": [data["tags"]],
+    "subtitles": [getFromData(data, "")],
+    "age restricted": [data["age_limit"]],
+    "likes": [data["like_count"]],
+    "checked": [datetime.now().strftime("%d/%m/%Y %H:%M:%S")]
+}
 
+    if len(row) == 0:
+        pdTemp = pd.DataFrame(videoFields)
+        vDf = pd.concat([vDf,pdTemp],ignore_index=True, sort=False)
+    else:
+        pdTemp = pd.DataFrame(videoFields)
+        vDf.loc[row[0]]=pdTemp.loc[0] # olit tässä
+
+    vDf.to_csv(path.join(pathToCsv, "videoInfo.csv"), index=False)
     
 def updateChannelCsv(pathToCsv, videoId, data):
-    print()
+    cDf = pd.read_csv(path.join(pathToCsv, "channelInfo.csv"))
+    
+    channelFields = {
+    "name": data["channel"],
+    "id": data["channel_id"],
+    "sub count" : data["channel_follower_count"],
+    "video count": getFromData(data, ""),
+    "about": getFromData(data, ""),
+    "edit timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    }
+    
+
+    pdTemp = pd.DataFrame(channelFields, index=[0])
+    cDf = pd.concat([cDf,pdTemp],ignore_index=True, sort=False)
+    cDf.to_csv(path.join(pathToCsv, "videoInfo.csv"), index=False)
+
 
 
 def createCsvFiles(channelPath):
-    vDf = pd.DataFrame(columns=videoFields)
-    cDf = pd.DataFrame(columns=channelFields)
-    vDf.to_csv(path.join(channelPath, "videoInfo"))
-    cDf.to_csv(path.join(channelPath, "channelInfo"))
+        
+    vDf = pd.DataFrame(columns=videoFieldsCols)
+    cDf = pd.DataFrame(columns=channelFieldsCols)
+    vDf.to_csv(path.join(channelPath, "videoInfo.csv"), index=False)
+    cDf.to_csv(path.join(channelPath, "channelInfo.csv"), index=False)
     print(vDf.columns)
 
 
-# createCsvFiles()

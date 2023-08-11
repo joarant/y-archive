@@ -83,7 +83,7 @@ def is_pathname_valid(pathname: str) -> bool:
         return True
 
 
-def createChannelFolder(channelName: str, parentPath, channelId):
+def createChannelFolder(channelName: str, parentPath, channelId = "testi"):
     path = os.path.join(parentPath, channelName)
     if is_pathname_valid(path) == False:
         path = os.path.join(parentPath, channelId)
@@ -105,6 +105,9 @@ def createVideoFolder(videoName: str, parentPath: str, id: str):
     except OSError as error: 
         print(error)
         
+def clearTemp():
+    for file in os.listdir("tempFileLocation"):
+        os.remove(os.path.join("tempFileLocation",file))
 
 def moveFiles(from_folder, dest_folder):
     for c_path in os.listdir(from_folder):
@@ -113,7 +116,6 @@ def moveFiles(from_folder, dest_folder):
 
 def checkIfExsists(file_path):
     return os.path.exists(file_path)
-
 
 
 
