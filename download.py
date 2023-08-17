@@ -5,59 +5,61 @@
 # todo create csv file to keep track of the video information
 
 import csvManagment as cm
+import weakref
 
 import yt_dlp
 import fileManagment as fm
 
-class downloadObj:
 
-    # id: {url, video: false, subtitles, thumbnail, audio}
-    vidInfo = []
+class MyCustomPP(yt_dlp.postprocessor.PostProcessor):
+        def __init__(self, dObject):
+                yt_dlp.postprocessor.PostProcessor.__init__(self)
+                self.downloadObject = dObject
 
-    class MyCustomPP(yt_dlp.postprocessor.PostProcessor): # koita vaihtaa funktioksi
         def run(self, info):
             self.to_screen('Moving files')
-
-            if fm.checkIfExsists(fm.getPath(info["uploader"])) == False:
-                print("ei olemassa 1")
+            print(self.downloadObject, "vidInfo")
+            if fm.checkIfExsists(fm.getPath(info["uploader"])) == False: # uploader folder
                 path = fm.createChannelFolder(info["uploader"],"")
                 cm.createCsvFiles(path)
 
-            if fm.checkIfExsists(fm.getPath(info["uploader"] + "/" + info["title"])) == False:
-                print("ei olemassa 2")
+            if fm.checkIfExsists(fm.getPath(info["uploader"] + "/" + info["title"])) == False: # video folder
                 fm.createVideoFolder(info["title"], fm.getFolderPath(info["uploader"]), info["id"])
-                fm.moveFiles(fm.getFolderPath("tempFileLocation"), fm.getFolderPath(fm.getPath(info["uploader"] + "/" + info["title"])))
 
-            # cm.createCsvFiles(fm.getPath(info["uploader"]))
+            fm.moveFiles(fm.getFolderPath("tempFileLocation"), fm.getFolderPath(fm.getPath(info["uploader"] + "/" + info["title"])))
             # cm.updateChannelCsv(fm.getPath(info["uploader"]),info["id"],info)
-            cm.updateVideoCsv(fm.getPath(info["uploader"]),info["id"],info)
+            status = cm.updateVideoCsv(fm.getPath(info["uploader"]),info["id"],info)
+            self.downloadObject.vidInfo[status["id"]] = status
 
+            # self.downloadObject = None
             return [], info
 
+class downloadObj:
 
-    def downloadData(self, urls, getComments=False):
+    def __init__(self):
+        self.vidInfo = {}
+
+    def downloadData(self, urls, subtitles=False, thumbnail=False, getComments=False):
         ydl_opts = {
-        # 'writesubtitles': True,
-        # 'writeautomaticsub': True,
+        'writesubtitles': subtitles,
+        'writeautomaticsub': subtitles,
         "skip_download": True,
         "writeinfojson": True,
         "clean_infojson": True,
         "getcomments": getComments,
-        # "writethumbnail": True,
-        "writelink": True,
+        "writethumbnail": thumbnail,
+        # "writelink": True,
         "paths":{"home": "tempFileLocation"},
         }
 
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.add_post_processor(self.MyCustomPP(), when='after_video')
+            ydl.add_post_processor(MyCustomPP(self), when='after_video')
             error_code = ydl.download(urls)
 
+        return self.vidInfo
 
     def download(self, urls):
         ydl_opts = {
-        "skip_download": True,
-
         # 'writesubtitles': True,
         # 'writeautomaticsub': True,
         # "skip_download": True,
@@ -70,6 +72,7 @@ class downloadObj:
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.add_post_processor(MyCustomPP(self), when='after_video')
             error_code = ydl.download(urls)
 
 
@@ -91,6 +94,7 @@ class downloadObj:
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.add_post_processor(MyCustomPP(self), when='after_video')
             error_code = ydl.download(urls)
 
     # noDownload(['https://www.youtube.com/watch?v=BaW_jenozKc'])

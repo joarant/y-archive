@@ -110,9 +110,13 @@ def clearTemp():
         os.remove(os.path.join("tempFileLocation",file))
 
 def moveFiles(from_folder, dest_folder):
-    for c_path in os.listdir(from_folder):
-        os.rename(os.path.join(from_folder, c_path), os.path.join(dest_folder, c_path))
-        # shutil.move("path/to/current/file.foo", "path/to/new/destination/for/file.foo")
+    for vFile in os.listdir(from_folder):
+        if checkIfExsists(os.path.join(dest_folder, vFile)):
+            os.rename(os.path.join(from_folder, vFile), os.path.join(dest_folder, vFile))
+            # shutil.move("path/to/current/file.foo", "path/to/new/destination/for/file.foo")
+        else:
+            os.replace(os.path.join(from_folder, vFile), os.path.join(dest_folder, vFile))
+
 
 def checkIfExsists(file_path):
     return os.path.exists(file_path)

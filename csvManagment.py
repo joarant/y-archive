@@ -16,6 +16,7 @@ videoFieldsCols = [
     "video name",
     "thumbnail",
     "id",
+    "url",
     "view count",
     "upload date",
     "video",
@@ -46,7 +47,8 @@ def updateVideoCsv(pathToCsv, videoId, data):
     videoFields = {
     "video name": [getFromData(data, "title")],
     "thumbnail": [getFromData(data, "")],
-    "id": [data["id"]] ,
+    "id": [data["id"]],
+    "url": [getFromData(data, "webpage_url")],
     "view count": [data["view_count"]],
     "upload date": [data["upload_date"]],
     "video": [getFromData(data, "")],
@@ -62,12 +64,16 @@ def updateVideoCsv(pathToCsv, videoId, data):
 
     if len(row) == 0:
         pdTemp = pd.DataFrame(videoFields)
-        vDf = pd.concat([vDf,pdTemp],ignore_index=True, sort=False)
+        vDf = pd.concat([vDf,pdTemp], ignore_index=True, sort=False)
     else:
         pdTemp = pd.DataFrame(videoFields)
         vDf.loc[row[0]]=pdTemp.loc[0] # olit tässä
 
     vDf.to_csv(path.join(pathToCsv, "videoInfo.csv"), index=False)
+        # id: {url, video: false, subtitles, thumbnail, audio}
+    return {"id": getFromData(data, "id"), "url": getFromData(data, "webpage_url"),
+            "video": getFromData(data, "video"),"subtitles": getFromData(data, "subtitles"),
+            "thumbnail": getFromData(data, "thumbnail"),"audio": getFromData(data, "audio"),}
     
 def updateChannelCsv(pathToCsv, videoId, data):
     cDf = pd.read_csv(path.join(pathToCsv, "channelInfo.csv"))
