@@ -5,8 +5,8 @@
 # todo create csv file to keep track of the video information
 
 import csvManagment as cm
-import weakref
-
+import os
+import json
 import yt_dlp
 import fileManagment as fm
 
@@ -17,28 +17,56 @@ class MyCustomPP(yt_dlp.postprocessor.PostProcessor):
                 self.downloadObject = dObject
 
         def run(self, info):
-            self.to_screen('Moving files')
-            print(self.downloadObject, "vidInfo")
+            self._configuration_args()
+            info["uploader"] = info["uploader"].replace("/", "⧸")
+            info["title"] = info["title"].replace("/", "⧸")
+
+            if "comments" in info:
+                comments = {"comments": info["comments"]}
+                with open(os.path.join("tempFileLocation",info["title"] + " ["+ info["id"]+"]" + 'comments.json'), 'w') as fp:
+                    json.dump(comments, fp)
+                fp.close()
+
             if fm.checkIfExsists(fm.getPath(info["uploader"])) == False: # uploader folder
                 path = fm.createChannelFolder(info["uploader"],"")
                 cm.createCsvFiles(path)
 
-            if fm.checkIfExsists(fm.getPath(info["uploader"] + "/" + info["title"])) == False: # video folder
-                fm.createVideoFolder(info["title"], fm.getFolderPath(info["uploader"]), info["id"])
+            if fm.checkIfExsists(fm.getPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]"))) == False: # video folder
+                fm.createVideoFolder(info["title"] + " ["+ info["id"]+"]", fm.getFolderPath(info["uploader"]))
 
-            fm.moveFiles(fm.getFolderPath("tempFileLocation"), fm.getFolderPath(fm.getPath(info["uploader"] + "/" + info["title"])))
-            # cm.updateChannelCsv(fm.getPath(info["uploader"]),info["id"],info)
-            status = cm.updateVideoCsv(fm.getPath(info["uploader"]),info["id"],info)
+            fm.moveFiles(fm.getFolderPath("tempFileLocation"),
+                          fm.getFolderPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]")))
+            
+            cm.updateChannelCsv(os.path.join(info["uploader"], "channelInfo.csv"),info)
+            status = cm.updateVideoCsv(os.path.join(info["uploader"], "videoInfo.csv"),
+                                       fm.getFolderPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]")))
             self.downloadObject.vidInfo[status["id"]] = status
-
-            # self.downloadObject = None
             return [], info
 
 class downloadObj:
-
     def __init__(self):
         self.vidInfo = {}
 
+
+    def alreadyVideo(info, *, incomplete):
+        info["uploader"] = info["uploader"].replace("/", "⧸")
+        info["title"] = info["title"].replace("/", "⧸")
+        if fm.checkIfExsists(fm.getPath(info["uploader"])) == True: # uploader folder
+            if fm.checkIfExsists(fm.getPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]"))) == True: # video folder
+                paths = cm.getPaths(fm.getPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]")))
+                if len(paths["video_path"]) > 0:
+                    return "video already downloaded"
+
+    def alreadyAudio(info, *, incomplete):
+        info["uploader"] = info["uploader"].replace("/", "⧸")
+        info["title"] = info["title"].replace("/", "⧸")
+        if fm.checkIfExsists(fm.getPath(info["uploader"])) == True: # uploader folder
+            if fm.checkIfExsists(fm.getPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]"))) == True: # video folder
+                paths = cm.getPaths(fm.getPath(os.path.join(info["uploader"], info["title"] + " ["+ info["id"]+"]")))
+                if len(paths["audio_path"]) > 0:
+                    return "audio already downloaded"
+
+                
     def downloadData(self, urls, subtitles=False, thumbnail=False, getComments=False):
         ydl_opts = {
         'writesubtitles': subtitles,
@@ -48,10 +76,9 @@ class downloadObj:
         "clean_infojson": True,
         "getcomments": getComments,
         "writethumbnail": thumbnail,
-        # "writelink": True,
         "paths":{"home": "tempFileLocation"},
         }
-
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.add_post_processor(MyCustomPP(self), when='after_video')
             error_code = ydl.download(urls)
@@ -60,15 +87,8 @@ class downloadObj:
 
     def download(self, urls):
         ydl_opts = {
-        # 'writesubtitles': True,
-        # 'writeautomaticsub': True,
-        # "skip_download": True,
-        # "writeinfojson": True,
-        # "clean_infojson": True,
-        # "getcomments": True,
-        # # "writethumbnail": True,
-        # "writelink": True,
-        "paths":{"home":"tempFileLocation"}
+        "paths":{"home":"tempFileLocation"},
+        'match_filter': downloadObj.alreadyVideo,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -84,12 +104,7 @@ class downloadObj:
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'm4a',
         }],
-        # 'writesubtitles': True,
-        # 'writeautomaticsub': True,
-        # "writeinfojson": True,
-        # "clean_infojson": True,
-        # "getcomments": True,
-        # "writelink": True,
+        'match_filter': downloadObj.alreadyAudio,
         "paths":{"home":"tempFileLocation"}
         }
 
@@ -97,4 +112,3 @@ class downloadObj:
             ydl.add_post_processor(MyCustomPP(self), when='after_video')
             error_code = ydl.download(urls)
 
-    # noDownload(['https://www.youtube.com/watch?v=BaW_jenozKc'])
